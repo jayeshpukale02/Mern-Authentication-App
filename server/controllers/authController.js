@@ -84,12 +84,12 @@ export const logout=async (req,res)=>{
       httpOnly: true,
       secure: process.env.NODE_ENV==='porduction',
       sameSite: process.env.NODE_ENV='production' ? 'none': 'strict',
-      maxAge: 7 *24*60*60*1000
+      'none': 'strict',
     })
 
-    return res.json
+    return res.json({success: false, message: 'Logged out'})
 
   } catch (error) {
-    return res.json({success: false, message: 'Email or password required'})
+    return res.json({success: false, message: error.message})
   }
 }
