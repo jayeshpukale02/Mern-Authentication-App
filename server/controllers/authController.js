@@ -1,12 +1,13 @@
-import { response } from "express"
-import bcrypt from 'brypt.js';
+import bcrypt from 'bcryptjs';
 import userModel from "../models/userModel.js";
+import jwt from 'jsonwebtoken'
+import transporter from '../config/nodeMailer.js';
 
 
 export const register=async(req,res)=>{
   const {name,email,password}=req.body
 
-  if(!name || email || password){
+  if(!name || !email || !password){
     return res.json({success: false, message: 'Missing Details'})
   }
   
@@ -15,7 +16,7 @@ export const register=async(req,res)=>{
     const existingUser=await userModel.findOne({email})
 
     if (existingUser){
-       return res.json({success: false, message: 'Missing Details'})
+       return res.json({success: false, message: 'User already exists'})
     }
 
     const hashedPassword=await bcrypt.hash(password, 10);
@@ -32,6 +33,17 @@ export const register=async(req,res)=>{
       maxAge: 7 *24*60*60*1000
     });
 
+    //sending welcome email
+
+    const mailOptions={
+      from: process.env.SENDER_EMAIL,
+      to: email,
+      subject: 'Welcome to the world',
+      text: `Welcome to the world where everything is magical and amusing with email id ${email}`
+    }
+
+    await transporter.sendMail(mailOptions);
+
     return res.json({success: true});
   } 
   
@@ -44,7 +56,7 @@ export const login=async(req,res)=>{
 
   const {email,password}=req.body
 
-  if(!email || password){
+  if(!email || !password){
     return res.json({success: false, message: 'Email or password required'})
   }
 
@@ -65,8 +77,8 @@ export const login=async(req,res)=>{
 
     res.cookie('token',token,{
       httpOnly: true,
-      secure: process.env.NODE_ENV==='porduction',
-      sameSite: process.env.NODE_ENV='production' ? 'none': 'strict',
+      secure: process.env.NODE_ENV==='production',
+      sameSite: process.env.NODE_ENV==='production' ? 'none': 'strict',
       maxAge: 7 *24*60*60*1000
     });
 
@@ -82,12 +94,12 @@ export const logout=async (req,res)=>{
   try {
     res.clearCookie('token', {
       httpOnly: true,
-      secure: process.env.NODE_ENV==='porduction',
+      secure: process.env.NODE_ENV==='production',
       sameSite: process.env.NODE_ENV='production' ? 'none': 'strict',
       'none': 'strict',
     })
 
-    return res.json({success: false, message: 'Logged out'})
+    return res.json({success: true, message: 'Logged out'})
 
   } catch (error) {
     return res.json({success: false, message: error.message})
